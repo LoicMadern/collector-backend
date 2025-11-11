@@ -34,19 +34,7 @@ export class VideoGamesController {
 
   @Get('estimate-price/:id')
   async estimatePrice(@Param('id') id: string) {
-    let game = await this.videoGamesService.findOne(id);
-    this.priceService.getPrice(game!.name).subscribe({
-      next: async (response) => {
-        await this.videoGamesService.update(id, {
-          price: response.data.used_price,
-        } as UpdateVideoGameDto);
-        return
-      },
-      error: (error) => {
-        console.error('Error fetching price:', error);
-        return
-      },
-    });
+    return  this.videoGamesService.estimatePrice(id);
   }
 
   @Patch(':id')

@@ -6,6 +6,7 @@ import { VideoGame } from './entities/video-game.entity';
 import { Repository } from 'typeorm/repository/Repository';
 import { v4 as uuidv4 } from 'uuid';
 import { PriceService } from 'src/price/price.service';
+import { lastValueFrom } from 'rxjs';
 
 @Injectable()
 export class VideoGamesService {
@@ -23,16 +24,19 @@ export class VideoGamesService {
     return this.repo.find();
   }
 
-  estimatePrice(name :string){
-   this.priceService.getPrice(name).subscribe({
-      next: (response) => {
-        return response.data.used_price;
-      },
-      error: (error) => {
-        console.error('Error fetching price:', error);
-        return null;
-      },
-    });
+  async estimatePrice(id :string): Promise<number | null> {
+   const game = await this.findOne(id);
+    if (!game || !game.name) return null;
+
+    try {
+      const response = await lastValueFrom(this.priceService.getPrice(game.name));
+      const price = response?.data?.used_price ?? null;
+      if (price === null) return null;
+      return typeof price === 'number' ? price : Number(price);
+    } catch (error) {
+      console.error('Error fetching price:', error);
+      return null;
+    }
   }
 
   findOne(id: string) {
