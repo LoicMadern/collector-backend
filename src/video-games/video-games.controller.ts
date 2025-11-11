@@ -10,10 +10,11 @@ import {
 import { VideoGamesService } from './video-games.service';
 import { CreateVideoGameDto } from './dto/create-video-game.dto';
 import { UpdateVideoGameDto } from './dto/update-video-game.dto';
+import { PriceService } from 'src/price/price.service';
 
 @Controller('video-games')
 export class VideoGamesController {
-  constructor(private readonly videoGamesService: VideoGamesService) {}
+  constructor(private readonly videoGamesService: VideoGamesService, private readonly priceService : PriceService) {}
 
   @Post()
   create(@Body() createVideoGameDto: CreateVideoGameDto) {
@@ -28,7 +29,24 @@ export class VideoGamesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.videoGamesService.findOne(+id);
+    return this.videoGamesService.findOne(id);
+  }
+
+  @Get('estimate-price/:id')
+  async estimatePrice(@Param('id') id: string) {
+    let game = await this.videoGamesService.findOne(id);
+    this.priceService.getPrice(game!.name).subscribe({
+      next: async (response) => {
+        await this.videoGamesService.update(id, {
+          price: response.data.used_price,
+        } as UpdateVideoGameDto);
+        return
+      },
+      error: (error) => {
+        console.error('Error fetching price:', error);
+        return
+      },
+    });
   }
 
   @Patch(':id')

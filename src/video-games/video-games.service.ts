@@ -5,12 +5,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { VideoGame } from './entities/video-game.entity';
 import { Repository } from 'typeorm/repository/Repository';
 import { v4 as uuidv4 } from 'uuid';
+import { PriceService } from 'src/price/price.service';
 
 @Injectable()
 export class VideoGamesService {
   constructor(
     @InjectRepository(VideoGame)
     private repo: Repository<VideoGame>,
+    private priceService : PriceService
   ) {}
   async create(createVideoGameDto: CreateVideoGameDto) {
     await this.repo.save(createVideoGameDto);
@@ -21,13 +23,27 @@ export class VideoGamesService {
     return this.repo.find();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} videoGame`;
+  estimatePrice(name :string){
+   this.priceService.getPrice(name).subscribe({
+      next: (response) => {
+        return response.data.used_price;
+      },
+      error: (error) => {
+        console.error('Error fetching price:', error);
+        return null;
+      },
+    });
+  }
+
+  findOne(id: string) {
+    return this.repo.findOne({
+      where: {
+        id: id,
+      },
+    });
   }
 
   async update(id: string, updateVideoGameDto: UpdateVideoGameDto) {
-    console.log('updateVideoGameDto', updateVideoGameDto);
-    console.log('id', id);
     await this.repo.update(id, updateVideoGameDto);
     return `This action updates a #${id} videoGame`;
   }
