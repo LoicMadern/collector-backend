@@ -7,14 +7,15 @@ import { Repository } from 'typeorm/repository/Repository';
 import { v4 as uuidv4 } from 'uuid';
 import { PriceService } from 'src/price/price.service';
 import { lastValueFrom } from 'rxjs';
+import { log } from 'console';
 
 @Injectable()
 export class VideoGamesService {
   constructor(
     @InjectRepository(VideoGame)
     private repo: Repository<VideoGame>,
-    private priceService : PriceService
-  ) {}
+    private priceService: PriceService
+  ) { }
   async create(createVideoGameDto: CreateVideoGameDto) {
     await this.repo.save(createVideoGameDto);
     return 'This action adds a new videoGame';
@@ -24,13 +25,12 @@ export class VideoGamesService {
     return this.repo.find();
   }
 
-  async estimatePrice(id :string): Promise<number | null> {
-   const game = await this.findOne(id);
+  async estimatePrice(id: string): Promise<number | null> {
+    const game = await this.findOne(id);
     if (!game || !game.name) return null;
-
     try {
-      const response = await lastValueFrom(this.priceService.getPrice(game.name));
-      const price = response?.data?.used_price ?? null;
+      const data = await this.priceService.getPrice(game.name);
+      const price = data?.used_price ?? null;
       if (price === null) return null;
       return typeof price === 'number' ? price : Number(price);
     } catch (error) {
